@@ -1,10 +1,10 @@
 # Editor backup files
 *~
-# Generated results and associated lock files
-*.csv
-*.log
-*.ods
-*.txt
+# Lock files
 *~lock.*#
+# Generated results, graphs and logs
+datasets/
+graphs/
+logs/
 # The Python cache
 __pycache__
