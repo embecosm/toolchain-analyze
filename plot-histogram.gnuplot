@@ -1,4 +1,4 @@
-# Plot a single line category graph.
+# Plot a histogram.
 
 # Copyright (C) 2025 Embecosm Limited <www.embecosm.com>
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
@@ -20,8 +20,25 @@ if ("X".outf eq "X") {
 }
 
 # General plot configuration
+set style data histograms
+set style histogram rowstacked
+set boxwidth 0.75 relative
+set key outside invert
 set title title font 'Muli,21'
-set style line 1 lt 1 lc rgb "#004586" lw 5
+
+set linetype  1 lc rgb "#004586"
+set linetype  2 lc rgb "#ff420e"
+set linetype  3 lc rgb "#ffd320"
+set linetype  4 lc rgb "#579d1c"
+set linetype  5 lc rgb "#7e0021"
+set linetype  6 lc rgb "#83caff"
+set linetype  7 lc rgb "#314004"
+set linetype  8 lc rgb "#aecf00"
+set linetype  9 lc rgb "#4b1f6f"
+set linetype 10 lc rgb "#ff950e"
+set linetype 11 lc rgb "#c5000b"
+set linetype 12 lc rgb "#0084d1"
+set style fill solid 1.0 border -1
 set border 3
 
 #X access set up
@@ -35,6 +52,5 @@ set ytics out autofreq nomirror format "%.0f"
 set mytics 5
 set grid ytics lw 2
 
-# Now the plot, with labels every 3 spaces
-plot csvf using 2:xtic((int($0) % 3) == 0 ? stringcolumn(1) : "") \
-     notitle with lines ls 1
+# Now the plot
+plot for [c=2:graphcols] csvf using c:xticlabels(1)

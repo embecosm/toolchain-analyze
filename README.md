@@ -26,6 +26,8 @@ Parameterization scripts:
   parameters.
 - `gen-rels-llvm.sh`.  Generate the list of releases in LLVM and associated
   parameters.
+- `get-gcc-backend.sh`. Generate the list of back ends to measure.
+- `get-gcc-frontend.sh`. Generate the list of front ends to measure.
 
 Supporting scripts:
 - `count-commits-all-releases.sh`.  Count the commits by release in a
@@ -50,17 +52,39 @@ Wrapper scripts (currently under revision, do not use):
   LLVM project.
 - `count-authors.sh`.  Count the number of individual authors and
   multi-user domains by release and by year in the LLVM project.
-- `count-commits-gcc.sh`.  Count the number of commits by year in the GCC
-  project.
-- `count-commits-per-backend.sh`.  Count the number of commits by release and
-  by year for different back ends in the LLVM project.
-- `count-commits-per-frontend.sh`.  Count the number of commits by release and
-  by year for different front ends in the LLVM project.
-- `count-commits.sh`.  Count the number of commits by release and by year in
-  the LLVM project.
 
 ### Analyzing git repository activity
 
 - `analyze-prs.sh`.  Count the number of merged and unmerged closed pull
   requests and the average number of comments per merged PR in the LLVM GitHub
   repository
+
+## Examples
+
+All run from the top of this repository.  Locations of the repositories being
+examined will vary in your own situation!
+
+GCC commits per release
+```bash
+./count-commits-per-release.sh -r ../../gnu/gcc -n "gcc" -g origin \
+    -t "GCC commits per release"
+```
+
+GCC commits per year
+```bash
+./count-commits-per-year.sh -r ../../gnu/gcc -n gcc \
+    -t "GCC commits per year" --year-start 1988
+```
+
+GCC commits per release for various front ends
+```bash
+./count-commits-per-release-split.sh -r ../../gnu/gcc -n "gcc" -s "frontend" \
+    -g origin -t "GCC commits per release by front end"
+```
+
+GCC commits per release for various back ends
+```bash
+./count-commits-per-release-split.sh -r ../../gnu/gcc -n "gcc" -s "backend" \
+    -g origin -t "GCC commits per release by back end"
+
+```

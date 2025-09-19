@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Script to count commits in each project year.
 
@@ -7,10 +7,6 @@
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# All output is piped to 'tee', and this therefore discards the
-# return code of the original command. Setting the `pipefail` bash
-# option allows us to keep any non-zero return code, e.g. a build fails.
-set -o pipefail
 set -u
 
 usage () {

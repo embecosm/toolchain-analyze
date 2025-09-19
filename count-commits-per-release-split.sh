@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# Script to count commits in each release of a project
+# Script to count commits in each front-end per release.
 
 # Copyright (C) 2025 Embecosm Limited
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
@@ -14,18 +14,19 @@ usage () {
     cat <<EOF
     -r | --repo <dir>             : top directory of repostory (required)
     -n | --name <string>          : name of the project (required)
+    -s | --split <string>         : name of the split (e.g 'frontend')
     [-t | --title <string>]       : title for the graph (default
                                     "Commits per <name> release")
     [-g | --git-remote <string>]  : name of the git remote (default "origin")
     [-d | --data-file <file>]     : file for the generated CSV data (default
-    	                            "datasets/commits-per-release-<name>.csv"
+                                    in the "datasets" directory,
+    	                            "commits-per-release-<name>-<split>.csv"
     [-i | --image-file <file>]    : file for the generated PNG graph (default
-                                    "graphs/commits-per-release-<name>.png")
+                                    in the "graphs" directory
+                                    "commits-per-release-<name>-<split>.png")
     [--get-data | --no-get-data]  : Whether or not to get data (default get
                                     data)
     [--plot | --no-plot]          : Whether or not to plot (default plot)
-    [--args <list>]               : Space separated list of subdirectories
-                                    within the repository to examine
     [--xmm <val>]                 : X-dimension of the plot in mm (default
                                     119.0)
     [--ymm <val>]                 : Y-dimension of the plot in mm (default
@@ -48,6 +49,7 @@ tooldir="$(cd "$(dirname "${cmd}")" && echo "$PWD")"
 # Default arguments
 repodir=
 namelc=
+split=
 title=
 remote="origin"
 
@@ -58,7 +60,7 @@ getdata=true
 doplot=true
 args=""
 
-xmm=119.0
+xmm=243.9
 ymm=109.2
 dpi=300
 fontscale=1.714
@@ -76,6 +78,11 @@ until
 	    shift
 	    namelc="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 	    nameuc="$(echo "$1" | tr '[:lower:]' '[:upper:]')"
+	    ;;
+
+	-s|--split)
+	    shift
+	    split="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 	    ;;
 
 	-t|--title)
@@ -117,11 +124,6 @@ until
 
 	--no-plot)
 	    doplot=false
-	    ;;
-
-	--args)
-	    shift
-	    args="$1"
 	    ;;
 
 	--xmm)
@@ -185,7 +187,7 @@ fi
 
 if [[ "x${csvf}" == "x" ]]
 then
-    csvf="${tooldir}/datasets/commits-per-release-${namelc}.csv"
+    csvf="${tooldir}/datasets/commits-per-release-${namelc}-${split}.csv"
 fi
 
 # The use of the string "UNSPECIFIED" is because the empty string is a valid
@@ -193,7 +195,7 @@ fi
 # string "UNSPECIFIED" as the output file, they will get the default file name.
 if [[ "x${outf}" == "xUNSPECIFIED" ]]
 then
-    outf="${tooldir}/graphs/commits-per-release-${namelc}.png"
+    outf="${tooldir}/graphs/commits-per-release-${namelc}-${split}.png"
 fi
 
 # Derived argument
@@ -203,15 +205,63 @@ then
     persist="-persist"
 fi
 
-# Create the data (optional)
-colname="${nameuc} release"
+# Now the information about the back ends
+source "get-${namelc}-${split}.sh"
+
+# Temporary CSV file
+tmpf=$(mktemp --tmpdir ccpfXXXX.csv)
+
+# Get the data for each backend
+cols="1"
+nextcol="2"
+graphcols="1"
+isfirst=true
+for f in ${splitlist}
+do
+    subname=$(echo "$f" | cut -f1 -d:)
+    subtitle=$(echo "$f" | cut -f2 -d: | tr '#' ' ')
+    subdirs=$(echo "$f" | cut -f3 -d: | tr ',' ' ')
+    descr="${namelc}-${split}-${subname}"
+    dsname=${tooldir}/datasets/commits-per-release-${descr}.csv
+    imgname=${tooldir}/graphs/commits-per-release-${descr}.png
+
+    # Generating data is optional
+    if ${getdata}
+    then
+	${tooldir}/count-commits-per-release.sh -r ${repodir} -n ${namelc} \
+	    -g ${remote} \
+	    -t "${nameuc} commits per release (${subtitle})" \
+	    -d  ${dsname} -i ${imgname} --no-plot --args "${subdirs}"
+	sed -i -e "1s|# commits|${subtitle}|" ${dsname}
+
+	# Merge data.
+	if ${isfirst}
+	then
+	    rm -f ${csvf}
+	    cp ${dsname} ${csvf}
+	else
+	    csvtool paste ${csvf} ${dsname} -o ${tmpf}
+	    mv ${tmpf} ${csvf}
+	fi
+    fi
+
+    # Update useful lists
+    cols="${cols},${nextcol}"
+    nextcol=$((nextcol + 2))
+    graphcols=$((graphcols + 1))
+
+    # No longer the first iteration
+    isfirst=false
+done
+
+# Trim unwanted columns if we are generating data
 if ${getdata}
 then
-    # Create the list of current releases, along with branch prefix and suffix
-    source "${tooldir}/gen-rels-${namelc}.sh"
-    ${tooldir}/count-commits-all-releases.sh "${title}" "${colname}" \
-        "${repodir}" "${csvf}" "${prefix}" "${rels}" "${suffix}" ${args}
+    csvtool col ${cols} ${csvf} -o ${tmpf}
+    mv ${tmpf} ${csvf}
 fi
+
+rm -f ${tmpf}
 
 # Plot the graph (optional)
 if ${doplot}
@@ -223,11 +273,12 @@ then
     gnuplot ${persist} \
 	    -e "csvf='${csvf}'" \
 	    -e "outf='${outf}'" \
-	    -e "xcol='${colname}'" \
+	    -e "xcol='GCC Release'" \
 	    -e "ycol='# commits'" \
 	    -e "xpx=${xpx}" \
 	    -e "ypx=${ypx}" \
 	    -e "fontscale=${fontscale}" \
 	    -e "title='${title}'" \
-	    ${tooldir}/plot-one-line.gnuplot
+	    -e "graphcols='${graphcols}'" \
+	    ${tooldir}/plot-histogram.gnuplot
 fi
