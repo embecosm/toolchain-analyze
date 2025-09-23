@@ -1,13 +1,13 @@
 #!/bin/bash -e
 
-# Script to count commits in one release.
+# Script to count authors in one release.
 
 # Copyright (C) 2025 Embecosm Limited
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# The general premise is that this counts commits that are in one branch, but
+# The general premise is that this counts authors that are in one branch, but
 # not another for a repository.
 
 set -u
@@ -25,6 +25,8 @@ optional, and if missing, all commits in the repo are considered.
 EOF
 }
 
+cmd=$0
+
 if [[ $# -lt 3 ]]
 then
     usage >&2
@@ -38,9 +40,9 @@ br1="$1"
 shift
 br2="$1"
 shift
+logf="$1"
+shift
 args="$*"
-
-cmd=$0
 
 # Repo to work in
 cd "${gitdir}" > /dev/null 2>&1
@@ -48,10 +50,13 @@ cd "${gitdir}" > /dev/null 2>&1
 # First release is special
 if [[ "x${br2}" == "x" ]]
 then
-    num=$(git log --oneline --no-merges "${br1}" ${args} | \
-	      wc -l --total=only)
+    git log --no-merges "${br1}" --pretty="format:%an" ${args} | sort | \
+        uniq -c | sort -n -k1 | grep -v "CVS to SVN Conversion" > ${logf} 2>&1
+    num=$(wc -l --total=only ${logf})
 else
-    num=$(git log --oneline --no-merges "${br1}" ^"${br2}" ${args} | \
-	      wc -l --total=only)
+    git log --no-merges "${br1}" ^"${br2}" \
+        --pretty="format:%an" ${args} | sort | uniq -c | sort -n -k1 | \
+	grep -v "CVS to SVN Conversion" > ${logf} 2>&1
+    num=$(wc -l --total=only ${logf})
 fi
 echo "${num}"

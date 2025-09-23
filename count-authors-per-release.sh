@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# Script to count commits in each release of a project
+# Script to count authors in each project release.
 
 # Copyright (C) 2025 Embecosm Limited
 # Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
@@ -14,9 +14,9 @@ cmd=$(basename $0)
 tooldir="$(cd "$(dirname "$0")" && echo "$PWD")"
 
 # Get the arguments
-default_title_prefix="Commits"
-default_data_prefix="commits-per-release"
-default_image_prefix="commits-per-release"
+default_title_prefix="Authors"
+default_data_prefix="authors-per-release"
+default_image_prefix="authors-per-release"
 default_xmm=119.0
 default_ymm=109.2
 
@@ -28,8 +28,9 @@ if ${getdata}
 then
     # Create the list of current releases, along with branch prefix and suffix
     source "${tooldir}/gen-rels-${namelc}.sh"
-    ${tooldir}/count-commits-all-releases.sh "${title}" "${colname}" \
-        "${repodir}" "${csvf}" "${prefix}" "${rels}" "${suffix}" ${args}
+    ${tooldir}/count-authors-all-releases.sh "${namelc}" "${colname}" \
+        "${repodir}" "${csvf}" "${prefix}" "${rels}" "${suffix}" "${logdir}" \
+	${args}
 fi
 
 # Plot the graph (optional)
@@ -43,7 +44,7 @@ then
 	    -e "csvf='${csvf}'" \
 	    -e "outf='${outf}'" \
 	    -e "xcol='${colname}'" \
-	    -e "ycol='# commits'" \
+	    -e "ycol='# authors'" \
 	    -e "xpx=${xpx}" \
 	    -e "ypx=${ypx}" \
 	    -e "fontscale=${fontscale}" \

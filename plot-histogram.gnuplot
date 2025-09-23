@@ -48,6 +48,7 @@ set xtics out nomirror rotate by 45 scale 0.5 \
 
 # Y access set up
 set ylabel ycol
+set yrange [0:]
 set ytics out autofreq nomirror format "%.0f"
 set mytics 5
 set grid ytics lw 2
